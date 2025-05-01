@@ -1,4 +1,4 @@
-// Wait for DOM to be fully loaded
+    // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile Navigation
     const hamburger = document.querySelector('.hamburger');
@@ -175,6 +175,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (isValid) {
             // Show success message
+            console.log({
+                   name: nameInput.value,
+                  email: emailInput.value,
+                  message: messageInput.value
+        });
             alert('Thank you for your message! I will get back to you soon.');
             contactForm.reset();
 
