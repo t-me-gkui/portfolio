@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.transform = 'translateY(0)';
         });
     });
-    
+    /*
     // Form Validation
     const contactForm = document.querySelector('.contact-form');
     let isFormCooldown = false;
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         return re.test(String(email).toLowerCase());
     }
-    
+    */
     // Animate skills on scroll
     const skillItems = document.querySelectorAll('.skill-item');
     
