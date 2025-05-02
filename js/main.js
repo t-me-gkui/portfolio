@@ -199,7 +199,7 @@ contactForm.addEventListener('submit', function(e) {
                 let timeLeft = 10;
                 let cooldownTimer = setInterval(() => {
                     timeLeft--;
-                    submitButton.textContent = 'Please wait ${timeLeft} seconds...';
+                    submitButton.textContent = `Please wait ${timeLeft} seconds...`;
 
                     if (timeLeft <= 0) {
                         clearInterval(cooldownTimer);
