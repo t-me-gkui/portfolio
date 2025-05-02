@@ -132,108 +132,123 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Form Validation
-    const contactForm = document.querySelector('.contact-form');
-    let isFormCooldown = false;
-    
-    contactForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        console.log('Form submitted!');
-        if (isFormCooldown) {
-            alert('Please wait 10 seconds before sending another message.');
-            return;
-        }
-        
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
-        const messageInput = document.getElementById('message');
-        let isValid = true;
-        
-        // Simple validation
-        if (nameInput.value.trim() === '') {
-            showError(nameInput, 'Name is required');
-            isValid = false;
-        } else {
-            removeError(nameInput);
-        }
-        
-        if (emailInput.value.trim() === '') {
-            showError(emailInput, 'Email is required');
-            isValid = false;
-        } else if (!isValidEmail(emailInput.value)) {
-            showError(emailInput, 'Please enter a valid email');
-            isValid = false;
-        } else {
-            removeError(emailInput);
-        }
-        
-        if (messageInput.value.trim() === '') {
-            showError(messageInput, 'Message is required');
-            isValid = false;
-        } else {
-            removeError(messageInput);
-        }
-        
-        if (isValid) {
-            // Show success message
-            console.log({
-                   name: nameInput.value,
-                  email: emailInput.value,
-                  message: messageInput.value
+   const contactForm = document.querySelector('.contact-form');
+let isFormCooldown = false;
+
+contactForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    console.log('Form submitted!');
+    if (isFormCooldown) {
+        alert('Please wait 10 seconds before sending another message.');
+        return;
+    }
+
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const messageInput = document.getElementById('message');
+    let isValid = true;
+
+    // Simple validation
+    if (nameInput.value.trim() === '') {
+        showError(nameInput, 'Name is required');
+        isValid = false;
+    } else {
+        removeError(nameInput);
+    }
+
+    if (emailInput.value.trim() === '') {
+        showError(emailInput, 'Email is required');
+        isValid = false;
+    } else if (!isValidEmail(emailInput.value)) {
+        showError(emailInput, 'Please enter a valid email');
+        isValid = false;
+    } else {
+        removeError(emailInput);
+    }
+
+    if (messageInput.value.trim() === '') {
+        showError(messageInput, 'Message is required');
+        isValid = false;
+    } else {
+        removeError(messageInput);
+    }
+
+    if (isValid) {
+        // Prepare form data for Netlify submission
+        const formData = new FormData(contactForm);
+        const encodedFormData = new URLSearchParams(formData).toString();
+
+        fetch("/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: encodedFormData
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log("Form successfully submitted to Netlify");
+                alert('Thank you for your message! I will get back to you soon.');
+                contactForm.reset();
+
+                // Start cooldown
+                isFormCooldown = true;
+                const submitButton = contactForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Please wait 10 seconds...';
+
+                // Start countdown
+                let timeLeft = 10;
+                let cooldownTimer = setInterval(() => {
+                    timeLeft--;
+                    submitButton.textContent = Please wait ${timeLeft} seconds...;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(cooldownTimer);
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Send Message';
+                        isFormCooldown = false;
+                    }
+                }, 1000);
+            } else {
+                console.error("Form submission to Netlify failed");
+                alert("Oops! Something went wrong. Please try again later.");
+            }
+        })
+        .catch(error => {
+            console.error("Error submitting form:", error);
+            alert("Oops! Something went wrong. Please try again later.");
         });
-            alert('Thank you for your message! I will get back to you soon.');
-            contactForm.reset();
+    }
+});
 
-            // Start cooldown
-            isFormCooldown = true;
-            const submitButton = contactForm.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Please wait 10 seconds...';
+function showError(input, message) {
+    const formGroup = input.parentElement;
+    let errorElement = formGroup.querySelector('.error-message');
 
-            // Start countdown
-            let timeLeft = 10;
-            let cooldownTimer = setInterval(() => {
-                timeLeft--;
-                submitButton.textContent = `Please wait ${timeLeft} seconds...`;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(cooldownTimer);
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Send Message';
-                    isFormCooldown = false;
-                }
-            }, 1000);
-        }
-    });
-    
-    function showError(input, message) {
-        const formGroup = input.parentElement;
-        let errorElement = formGroup.querySelector('.error-message');
-        
-        if (!errorElement) {
-            errorElement = document.createElement('div');
-            errorElement.className = 'error-message';
-            formGroup.appendChild(errorElement);
-        }
-        
-        errorElement.textContent = message;
-        input.classList.add('error');
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        formGroup.appendChild(errorElement);
     }
-    
-    function removeError(input) {
-        const formGroup = input.parentElement;
-        const errorElement = formGroup.querySelector('.error-message');
-        
-        if (errorElement) {
-            formGroup.removeChild(errorElement);
-        }
-        
-        input.classList.remove('error');
+
+    errorElement.textContent = message;
+    input.classList.add('error');
+}
+
+function removeError(input) {
+    const formGroup = input.parentElement;
+    const errorElement = formGroup.querySelector('.error-message');
+
+    if (errorElement) {
+        formGroup.removeChild(errorElement);
     }
-    
-    function isValidEmail(email) {
-        const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(String(email).toLowerCase());
-    }
+
+    input.classList.remove('error');
+}
+
+function isValidEmail(email) {
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
     
     // Animate skills on scroll
     const skillItems = document.querySelectorAll('.skill-item');
