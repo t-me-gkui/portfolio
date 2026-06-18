@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Typing Animation
     const typingText = document.querySelector('.typing-text');
     const cursor = document.querySelector('.cursor');
-    const words = ['Web Developer', 'Mobile Developer', 'UI/UX Designer', 'Problem Solver'];
+    const words = ['Software Engineer', 'Full-Stack Developer', 'Problem Solver', 'Spring Boot & React'];
     let wordIndex = 0;
     let charIndex = 0;
     let isDeleting = false;
@@ -89,23 +89,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start typing animation
     setTimeout(type, 1000);
     
-    // Scroll Animation
+    // Scroll Animation & URL Hash Update
     const sections = document.querySelectorAll('section');
     const navbarHeight = document.querySelector('.navbar').offsetHeight;
     
     window.addEventListener('scroll', function() {
         const scrollPosition = window.scrollY + navbarHeight + 100;
         
-        // Add active class to navbar links based on scroll position
+        // Add active class to navbar links and update URL endpoint hash based on scroll position
         sections.forEach(section => {
             const sectionTop = section.offsetTop;
             const sectionHeight = section.offsetHeight;
             const sectionId = section.getAttribute('id');
             
-            if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-                document.querySelector(`.nav-links a[href*=${sectionId}]`).classList.add('active');
-            } else {
-                document.querySelector(`.nav-links a[href*=${sectionId}]`).classList.remove('active');
+            const navLink = document.querySelector(`.nav-links a[href*=${sectionId}]`);
+            if (navLink) {
+                if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                    navLink.classList.add('active');
+                    // Dynamically update URL hash without scrolling the page
+                    if (history.replaceState && window.location.hash !== '#' + sectionId) {
+                        history.replaceState(null, null, '#' + sectionId);
+                    }
+                } else {
+                    navLink.classList.remove('active');
+                }
             }
         });
         
@@ -128,6 +135,44 @@ document.addEventListener('DOMContentLoaded', function() {
         
         card.addEventListener('mouseleave', function() {
             this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Search Functionality (Filters Projects & Skills)
+    const searchInput = document.querySelector('.search-input');
+    
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        
+        // Filter Projects (hides non-matching)
+        projectCards.forEach(card => {
+            const title = card.querySelector('h3').textContent.toLowerCase();
+            const description = card.querySelector('p').textContent.toLowerCase();
+            
+            if (title.includes(query) || description.includes(query)) {
+                card.style.display = '';
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'scale(1)';
+                }, 10);
+            } else {
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                card.style.display = 'none';
+            }
+        });
+        
+        // Filter Skills (dims non-matching to preserve visual layout)
+        const skillItems = document.querySelectorAll('.skill-item');
+        skillItems.forEach(item => {
+            const skillName = item.querySelector('span').textContent.toLowerCase();
+            
+            if (skillName.includes(query)) {
+                item.style.opacity = '1';
+                item.style.transform = 'scale(1)';
+            } else {
+                item.style.opacity = query ? '0.15' : '1';
+            }
         });
     });
     
@@ -288,46 +333,136 @@ function isValidEmail(email) {
         });
     });
     
-    // Initialize cube rotation
+    // Initialize physics-based cube rotation
     const cube = document.querySelector('.cube');
-    let startX, startY, currentX = -15, currentY = 15;
-    let isDragging = false;
+    cube.style.animation = 'none'; // Disable CSS rotation animation
     
-    // Make cube interactive
-    cube.addEventListener('mousedown', function(e) {
+    let currentX = -15; // Initial X rotation
+    let currentY = 15;  // Initial Y rotation
+    
+    // Default constant rotation velocities (degrees per frame ~16.7ms)
+    const defaultVx = 0.15;
+    const defaultVy = 0.25;
+    
+    let vx = defaultVx;
+    let vy = defaultVy;
+    
+    let isDragging = false;
+    let lastX, lastY, lastTime;
+    const friction = 0.96; // Deceleration rate per frame when released
+    
+    function updateRotation() {
+        // Apply friction and blend towards default velocity
+        vx = vx * friction + defaultVx * (1 - friction);
+        vy = vy * friction + defaultVy * (1 - friction);
+        
+        // Apply velocities to current angles
+        currentX += vx;
+        currentY += vy;
+        
+        // Constrain X rotation to avoid flipping upside down
+        currentX = Math.max(-85, Math.min(85, currentX));
+        
+        cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+        
+        requestAnimationFrame(updateRotation);
+    }
+    
+    // Start physics loop
+    requestAnimationFrame(updateRotation);
+    
+    // Drag handlers
+    function startDrag(clientX, clientY, e) {
         isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        cube.style.animation = 'none';
+        lastX = clientX;
+        lastY = clientY;
+        lastTime = performance.now();
+        
+        if (e && e.cancelable) {
+            e.preventDefault();
+        }
+    }
+    
+    function moveDrag(clientX, clientY) {
+        if (!isDragging) return;
+        
+        const now = performance.now();
+        const dt = now - lastTime;
+        
+        const deltaX = clientX - lastX;
+        const deltaY = clientY - lastY;
+        
+        // Update rotation position instantly during drag
+        currentY = (currentY + deltaX * 0.4) % 360;
+        currentX = Math.max(-85, Math.min(85, currentX - deltaY * 0.4));
+        
+        cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+        
+        // Calculate velocity (degrees per millisecond, converted to degrees per frame)
+        if (dt > 0) {
+            vy = (deltaX * 0.4 / dt) * 16.7;
+            vx = -(deltaY * 0.4 / dt) * 16.7;
+            
+            // Cap speed to keep it natural and avoid extreme spins
+            const maxSpeed = 15;
+            vx = Math.max(-maxSpeed, Math.min(maxSpeed, vx));
+            vy = Math.max(-maxSpeed, Math.min(maxSpeed, vy));
+        }
+        
+        lastX = clientX;
+        lastY = clientY;
+        lastTime = now;
+    }
+    
+    function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        const now = performance.now();
+        if (now - lastTime > 100) {
+            vx = defaultVx;
+            vy = defaultVy;
+        }
+    }
+    
+    // Mouse Event Listeners
+    cube.addEventListener('mousedown', function(e) {
+        startDrag(e.clientX, e.clientY, e);
     });
     
     document.addEventListener('mousemove', function(e) {
-        if (isDragging) {
-            const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY;
-            
-            currentY = (currentY + deltaX * 0.5) % 360;
-            currentX = Math.max(-75, Math.min(75, currentX - deltaY * 0.5));
-            
-            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
-            
-            startX = e.clientX;
-            startY = e.clientY;
-        }
+        moveDrag(e.clientX, e.clientY);
     });
     
     document.addEventListener('mouseup', function() {
-        isDragging = false;
+        endDrag();
     });
     
-    // Resume cube animation when mouse leaves
-    cube.addEventListener('mouseleave', function() {
-        if (!isDragging) {
-            cube.style.animation = 'rotate 20s infinite linear';
+    // Touch Event Listeners (Mobile support)
+    cube.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+            startDrag(e.touches[0].clientX, e.touches[0].clientY, e);
         }
+    }, { passive: false });
+    
+    document.addEventListener('touchmove', function(e) {
+        if (isDragging && e.touches.length === 1) {
+            moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+        }
+    }, { passive: false });
+    
+    document.addEventListener('touchend', function() {
+        endDrag();
     });
     
-    // Add CSS class for error styling
+    document.addEventListener('touchcancel', function() {
+        endDrag();
+    });
+    
+    // Add CSS class for error styling and interactive cube cursors
     const style = document.createElement('style');
     style.textContent = `
         .error-message {
@@ -365,22 +500,23 @@ function isValidEmail(email) {
             opacity: 1;
             transform: translateY(0);
         }
+        
+        .cube-container, .cube, .cube-face {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        .cube {
+            cursor: grab;
+        }
+        
+        .cube:active {
+            cursor: grabbing;
+        }
     `;
     document.head.appendChild(style);
     
-    // Fix image paths for GitHub Pages
-    const projectImages = document.querySelectorAll('.project-card img');
-    const heroImage = document.querySelector('.hero-image img');
-    
-    // Update hero image path
-    if (heroImage && heroImage.src.includes('C:\\Users\\Dell\\Desktop\\portfolio\\assets\\')) {
-        heroImage.src = 'assets/profile.jpg';
-    }
-    
-    // Update project image paths
-    projectImages.forEach((img, index) => {
-        if (img.src.includes('assets/project')) {
-            img.src = `assets/project${index + 1}.jpg`;
-        }
-    });
+
 });
