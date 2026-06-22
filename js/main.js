@@ -315,6 +315,29 @@ function isValidEmail(email) {
     skillItems.forEach(item => {
         observer.observe(item);
     });
+
+    // Optimized Scroll Reveal IntersectionObserver for glass panels
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // Conditional Mouse-Based Blob Parallax for desktop
+    if (window.matchMedia("(pointer: fine)").matches) {
+        document.addEventListener('mousemove', e => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            const blob1 = document.querySelector('.blob-1');
+            const blob2 = document.querySelector('.blob-2');
+            if (blob1) blob1.style.transform = `translate3d(${x * 15}px, ${y * 15}px, 0)`;
+            if (blob2) blob2.style.transform = `translate3d(${x * -15}px, ${y * -15}px, 0)`;
+        });
+    }
     
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
